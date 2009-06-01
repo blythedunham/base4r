@@ -1,5 +1,5 @@
 # Base4R is a ruby interface to Google Base
-# Copyright 2007, 2008 Dan Dukeson
+# Copyright 2007 Dan Dukeson
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ module Base4R
     # Create a FloatUnitAttribute with _name_, a quantity of _number_, described in _units_ and in _namespace_ 
     def initialize(name, number, units, namespace)
       @type_name = 'floatUnit'
-      super(name, number.to_s+' '+units, namespace)
+      super(name, "#{number} #{units}".strip, namespace)
     end
   end
 
