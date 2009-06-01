@@ -20,9 +20,10 @@ require 'client_login'
 
 module Base4R
 
+  class BaseException < Exception; end
+  
   # BaseClient handles all communication with the Base API using HTTP
   class BaseClient
-
     ITEMS_PATH = '/base/feeds/items/'
     SNIPPETS_PATH = '/base/feeds/snippets/'    
     BASE_HOST = 'base.google.com'
@@ -51,22 +52,20 @@ module Base4R
     # Throws an Exception if there is a problem creating _item_.
     #
     def create_item(item)
-      
       resp = do_request(item.to_xml.to_s, 'POST')
-      raise "Error creating base item:"+resp.body unless resp.kind_of? Net::HTTPCreated
+      raise BaseException.new("Error creating base item: #{resp.body}") unless resp.kind_of? Net::HTTPSuccess
       resp['location'] =~ /(\d+)$/
       item.base_id= $1
-      $1
     end
 
     # Update the supplied Base _item_. Returns true on success.
     # Throws an Exception if there is a problem updating _item_.
     #
     def update_item(item)
-
-      raise "base_id is required" if item.base_id.nil?
-      resp = do_request(item.to_xml.to_s, 'PUT', item.base_id)
-      raise "Error updating base item:"+resp.body unless resp.kind_of? Net::HTTPOK
+      base_id = item_base_id item
+      raise BaseException.new("base_id is required") if base_id.nil?
+      resp = do_request(item.to_xml.to_s, 'PUT', :base_id => base_id)
+      raise BaseException.new("Error updating base item:"+resp.body) unless resp.kind_of? Net::HTTPOK
       true
     end
 
@@ -74,31 +73,42 @@ module Base4R
     # Throws an Exception if there is a problem deleting _item_
     #
     def delete_item(item)
-
-      raise "base_id is required" if item.base_id.nil?
-      resp = do_request(nil, 'DELETE', item.base_id)
-      raise "Error deleting base item:"+resp.body unless resp.kind_of? Net::HTTPOK
+      base_id = item_base_id item
+      raise BaseException.new("base_id is required") if base_id.nil?
+      resp = do_request(nil, 'DELETE', :base_id => base_id)
+      raise BaseException.new("Error deleting base item:"+resp.body) unless resp.kind_of? Net::HTTPOK
       true
+    end
+
+    def get_item(base_id)
+      resp = do_request '', 'GET', :base_id => nil, :url => "http://www.google.com/base/feeds/items/#{base_id}"
     end
 
     private
 
-    def do_request(data, http_method, base_id=nil)
+    def item_base_id(item)
+      item.respond_to?(:base_id) ? item.base_id : item
+    end
 
-      url = 'http://'+BASE_HOST+@feed_path
-      url << base_id unless base_id.nil?
-      
+
+    def do_request(data, http_method, options={})
+
+
+      url = options[:url]||"http://#{BASE_HOST}#{@feed_path}"
+      url << "/#{options[:base_id]}" if options[:base_id]
+
       url = URI.parse(url)
-
-      headers = {'X-Google-Key' => 'key='+@api_key,
-                 'Authorization' => 'GoogleLogin auth='+@auth_key,
+      headers = {'X-Google-Key' => "key=#{@api_key}",
+                 'Authorization' => "GoogleLogin auth=#{@auth_key}",
                  'Content-Type' => 'application/atom+xml'}
-
+      
       result = Net::HTTP.start(url.host, url.port) { |http|
         http.send_request(http_method, url.path, data, headers)
       }
-      
+
+      result
     end
 
-  end 
+  end
+
 end
