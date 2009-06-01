@@ -54,7 +54,7 @@ module Base4R
                               })
       
       author = entry.add_element('author')
-      author.add_element('name').text= @author_name
+      author.add_element('name').text=  @author_name
       author.add_element('email').text= @author_email
 
       entry.add_element('category',
@@ -80,25 +80,55 @@ module Base4R
   #
   class UniversalItem < Item
 
+    TEXT_ATTRIBUTES = [:description, :contact_phone, :item_type, :target_country, :item_language ]
+    TEXT_ATTRIBUTES.each do |method|
+      class_eval <<-EOS, __FILE__, __LINE__
+        def #{method}=(value)
+          @attributes << TextAttribute.new(#{method.to_s.inspect}, value, :g)
+        end
+      EOS
+    end
+
+    #alias_method :description=, :content=
+    alias_method :item_lang=, :item_language=
+
     # Create a new UniversalItem, with _unique_id_, created by _author_name_ who's email is _author_email_, 
     # described by _description_, found at URL _link_, entitled _title_, phone number is 
-    # _contact_phone_, item type is _item_type_, _target_country_ e.g. 'GB', _item_language_ e.g. 'EN' 
-    def initialize(unique_id, author_name, author_email, description, link, 
-                   title, contact_phone, item_type, target_country, item_lang)
-     
-      @author_name  = author_name
-      @author_email = author_email
-      @title = title
+    # _contact_phone_, item type is _item_type_, _target_country_ e.g. 'GB', _item_language_ e.g. 'EN'
+    #
+    # Args can also be a hash of attributes
+    def initialize(*args)
+      
+      options = if args.first.is_a?(Hash) 
+        args.first.dup 
+      else
+        %w(unique_id author_name author_email description link title contact_phone item_type target_country item_lang).inject({}) {|map, option|
+          map[option.to_sym] = args.shift
+          map
+        }
+      end
+      
+      @author_name  = options.delete(:author_name)
+      @author_email = options.delete(:author_email)
+      @title        = options.delete(:title)
       
       @attributes = []
+      @attributes << TextAttribute.new('id', options.delete(:unique_id), :g)
+      
 
-      @attributes << UrlAttribute.new('link', link, :atom)
-      @attributes << TextAttribute.new('content', description, :atom)
-      @attributes << TextAttribute.new('contact_phone', contact_phone, :g)
-      @attributes << TextAttribute.new('item_language', item_lang, :g)
-      @attributes << TextAttribute.new('item_type', item_type, :g)
-      @attributes << TextAttribute.new('target_country', target_country, :g)
-      @attributes << TextAttribute.new('id', unique_id, :g)
+      options.each do |key, value|
+        send "#{key}=", value if value
+      end
+
+    end
+
+    def update_attributes(attributes)
+      attributes.each {|attr| self.send("#{attr}=")}
+    end
+
+
+    def link=(value)
+      @attributes << UrlAttribute.new('link', value, :atom)
     end
 
     def application=(application)
@@ -113,10 +143,12 @@ module Base4R
       @attributes << BareAttribute.new('image_link', image_url)
     end
 
+    alias_method :image_link=, :add_image_link
+
     def add_label(label)
       @attributes << TextAttribute.new('label', label, :g)
     end
-
+    alias_method :label=, :add_label
 
   end
 
@@ -124,15 +156,6 @@ module Base4R
   # suggested or required for the Product item type.
   #
   class ProductItem < UniversalItem
-
-    def initialize(unique_id, author_name, author_email, description, link, 
-                   title, contact_phone, item_type, target_country, item_lang)
-
-      super(unique_id, author_name, author_email, description, link,
-            title, contact_phone, item_type, target_country, item_lang)
-      
-    end
-   
 
     def condition=(condition)
       @attributes << TextAttribute.new('condition', condition, :g)
@@ -168,10 +191,11 @@ module Base4R
       @attributes << BooleanAttribute.new('pickup', false, :g)
     end
 
-    def price(price_amount, price_units)
-      
+    def price(price_amount, price_units=nil)
       @attributes << FloatUnitAttribute.new('price', price_amount, price_units, :g)
     end
+
+    alias_method :price=, :price
 
     def price_type=(price_type)
       
