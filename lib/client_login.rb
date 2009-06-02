@@ -28,6 +28,7 @@ module Base4R
   #
   class ClientLogin
 
+    include Base4R::HTTPLogger
     ServiceURL = URI.parse('https://www.google.com/accounts/ClientLogin')
 
     # Create a ClientLogin. _options_ is optional and by default logs into
@@ -61,11 +62,12 @@ module Base4R
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       http.ca_file = File.expand_path(File.dirname(__FILE__)+"/../cert/cacert.pem")
-
       # todo - above is probably reading file for every request, cache certs instead
 
+      log_request req
       resp = http.request(req)
-            
+      log_response resp
+
       unless resp.instance_of? Net::HTTPOK then
         resp.body =~ /^Error=(.+)$/
 

@@ -21,9 +21,23 @@ require 'client_login'
 module Base4R
 
   class BaseException < Exception; end
-  
+
+  class ErrorResponse < BaseException
+    attr_reader :response
+
+    def initialize(msg, resp)
+      @response = resp
+      super msg
+    end
+  end
+
+  class ItemNotFound < ErrorResponse; end
+
   # BaseClient handles all communication with the Base API using HTTP
   class BaseClient
+
+    include HTTPLogger
+    
     ITEMS_PATH = '/base/feeds/items/'
     SNIPPETS_PATH = '/base/feeds/snippets/'    
     BASE_HOST = 'base.google.com'
@@ -53,7 +67,7 @@ module Base4R
     #
     def create_item(item)
       resp = do_request(item.to_xml.to_s, 'POST')
-      raise BaseException.new("Error creating base item: #{resp.body}") unless resp.kind_of? Net::HTTPSuccess
+      raise ErrorResponse.new("Error creating base item: #{resp.body}", resp) unless resp.kind_of? Net::HTTPSuccess
       resp['location'] =~ /(\d+)$/
       item.base_id= $1
     end
@@ -65,17 +79,17 @@ module Base4R
       base_id = item_base_id item
       raise BaseException.new("base_id is required") if base_id.nil?
       resp = do_request(item.to_xml.to_s, 'PUT', :base_id => base_id)
-      raise BaseException.new("Error updating base item:"+resp.body) unless resp.kind_of? Net::HTTPOK
+      raise_response_error "Error updating base item", resp
       true
     end
 
     # Delete the supplied Base _item_. Returns true on success.
     # Throws an Exception if there is a problem deleting _item_
-    #
     def delete_item(item)
       base_id = item_base_id item
       raise BaseException.new("base_id is required") if base_id.nil?
       resp = do_request(nil, 'DELETE', :base_id => base_id)
+      raise_response_error "Error deleting base item", resp
       raise BaseException.new("Error deleting base item:"+resp.body) unless resp.kind_of? Net::HTTPOK
       true
     end
@@ -86,6 +100,21 @@ module Base4R
 
     private
 
+    #raise the appropriate error based on the response
+    # +message+ - the error message
+    # +response+ - the Net::HTTPResponse object
+    def raise_response_error(message, response)
+      error_klass = if response.is_a?(Net::HTTPNotFound) && response.body =~ /Cannot find item/
+        ItemNotFound
+      elsif !response.kind_of?(Net::HTTPOK)
+        ErrorResponse
+      end
+
+      raise error_klass.new("#{message}: #{response.body}", response) if error_klass
+    end
+
+    # Return the base id of the item if it is a Base4r::Item
+    # otherwise assume it is the actual base id
     def item_base_id(item)
       item.respond_to?(:base_id) ? item.base_id : item
     end
@@ -95,17 +124,21 @@ module Base4R
 
 
       url = options[:url]||"http://#{BASE_HOST}#{@feed_path}"
-      url << "/#{options[:base_id]}" if options[:base_id]
+      url << "#{options[:base_id]}" if options[:base_id]
 
       url = URI.parse(url)
+      
       headers = {'X-Google-Key' => "key=#{@api_key}",
                  'Authorization' => "GoogleLogin auth=#{@auth_key}",
                  'Content-Type' => 'application/atom+xml'}
-      
+
       result = Net::HTTP.start(url.host, url.port) { |http|
-        http.send_request(http_method, url.path, data, headers)
+        request = Net::HTTPGenericRequest.new(http_method,(data ? true : false),true, url.path, headers)
+        log_request request, :url => url, :method => http_method, :data => data
+        http.request request, data
       }
 
+      log_response result
       result
     end
 
