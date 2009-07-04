@@ -19,7 +19,7 @@ module Base4R
       
       request.each_capitalized {|k, v| log "#{k}: #{v}" } if request.respond_to? :each_capitalized
       
-      log options[:data] ? options[:data] : request.body
+      log((options[:data] ? options[:data] : request.body).to_s.gsub('><',">\n<"))
 
       log "-------#{request.to_s}----------"
     end

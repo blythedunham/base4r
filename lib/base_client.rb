@@ -42,15 +42,16 @@ module Base4R
     SNIPPETS_PATH = '/base/feeds/snippets/'    
     BASE_HOST = 'base.google.com'
 
-    attr_reader :auth_key #:nodoc:
-    attr_reader :feed_path #:nodoc:
+    attr_reader   :auth_key #:nodoc:
+    attr_reader   :feed_path #:nodoc:
+    attr_accessor :dry_run
 
     # Construct a BaseClient, which will make API requiest for the Base account
     # belonging to _username_, authenticating with _password_ and using _api_key_. 
     # Requests will be made against the public feed if _public_feed_ is true, which is the default.
     # The BaseClient can be used for a number of Base API requests.
     # 
-    def initialize(username, password, api_key, public_feed=true)
+    def initialize(username, password, api_key, public_feed=true, dry_run=false)
 
       @auth_key = ClientLogin.new.authenticate(username, password)
       @api_key = api_key
@@ -60,6 +61,7 @@ module Base4R
       else
         @feed_path = ITEMS_PATH
       end
+      @dry_run = dry_run
     end
 
     # Creates the supplied _item_ as a new Base Item.
@@ -125,7 +127,7 @@ module Base4R
 
       url = options[:url]||"http://#{BASE_HOST}#{@feed_path}"
       url << "#{options[:base_id]}" if options[:base_id]
-
+      url << "?dry-run=true" if dry_run
       url = URI.parse(url)
       
       headers = {'X-Google-Key' => "key=#{@api_key}",
