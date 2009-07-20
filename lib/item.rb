@@ -273,7 +273,7 @@ module Base4R
       :price_units    => nil,
       :price          => {:type => :float_unit},
       :image_like     => { :type => :bare },
-      :quanity        => { :type => :int, :name => 'Quantity' }})
+      :quantity       => { :type => :int }})
 
     #rewrite to satisfy old style of price setting
     #  set_price 5, 'usd'
