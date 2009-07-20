@@ -1,5 +1,5 @@
 require 'rubygems'
-Gem::manage_gems
+
 require 'rake/gempackagetask'
 require 'rake/testtask'
 require 'rake/rdoctask'
@@ -7,10 +7,10 @@ require 'rake/rdoctask'
 spec = Gem::Specification.new do |s|
     s.platform  =   Gem::Platform::RUBY
     s.name      =   "base4r"
-    s.homepage  =   "http://code.google.com/p/base4r"
-    s.version   =   "0.2"
-    s.author    =   "Dan Dukeson"
-    s.email     =   "dandukeson@gmail.com"
+    s.homepage  =   "http://github.com/blythedunham/base4r"
+    s.version   =   "0.2.0.4"
+    s.author    =   "Dan Dukeson, Blythe Dunham"
+    s.email     =   "blythe@snowgiraffe.com"
     s.summary   =   "Ruby client for the Google Base API"
     s.files     =   FileList['lib/*.rb', 'test/*.rb', 'cert/cacert.pem', 'LICENSE'].to_a
     s.require_path  =   "lib"
