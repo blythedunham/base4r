@@ -7,10 +7,9 @@ Gem::Specification.new do |s|
   s.date = %q{2009-07-20}
   s.description = %q{Ruby interface to google base a4rpi}
   s.email = %q{blythe@snowgiraffe.com}
-  s.files = Dir.glob("{bin,lib}/**/*")
+  s.files = Dir.glob(['lib/*.rb', 'test/*.rb', 'cert/cacert.pem', 'LICENSE', 'README'])
   s.has_rdoc = false
   s.homepage = %q{http://github.com/blythedunham/base4r}
-  s.rdoc_options = ["--line-numbers", "--inline-source", "--title", "base4r", "--main", "README"]
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{base4r}
   s.rubygems_version = %q{1.3.1}
