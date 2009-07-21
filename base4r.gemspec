@@ -6,8 +6,8 @@ Gem::Specification.new do |s|
   s.authors = ["Dan Dukeson, Blythe Dunham"]
   s.date = %q{2009-07-20}
   s.description = %q{Ruby client for the Google Base API}
-  s.email = %q{blythe@snowgiraffe.com}
-  s.files = Dir.glob(['lib/*.rb', 'test/*.rb', 'cert/cacert.pem', 'LICENSE', 'README'])
+  s.email = %q{blythe@snowgiraffe.com} 
+  s.files = ['lib/attribute.rb', 'lib/base4r.rb', 'lib/base_client.rb', 'lib/client_login.rb', 'lib/item.rb', 'lib/http_logger.rb', 'test/attribute_test.rb', 'test/client_login_test.rb', 'test/item_test.rb', 'test/base_client_test.rb', 'cert/cacert.pem', 'LICENSE', 'README']
   s.has_rdoc = false
   s.homepage = %q{http://github.com/blythedunham/base4r}
   s.require_paths = ["lib"]
